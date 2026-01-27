@@ -7,3 +7,5 @@ venv/
 data/
 
 __pycache__/
+
+.pth
