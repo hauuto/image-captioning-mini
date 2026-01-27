@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import torch
 from collections import Counter
 from torch.nn.utils.rnn import pad_sequence
