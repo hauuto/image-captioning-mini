@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import torch
-
+import torch_directml
 
 class Config:
     DATA_DIR = '../data/flickr8k'
