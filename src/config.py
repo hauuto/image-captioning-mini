@@ -16,7 +16,7 @@ class Config:
 
     LEARNING_RATE = 3e-4
     BATCH_SIZE = 32
-    EPOCHS = 10
+    EPOCHS = 1
     NUM_WORKERS = 2
 
 
