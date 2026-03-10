@@ -1,0 +1,1 @@
+from .Flickr8k import Flickr8k
