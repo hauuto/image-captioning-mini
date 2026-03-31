@@ -81,24 +81,19 @@ def train_model(model, train_loader, val_loader, optimizer, criterion, device, e
 def generate_caption(model, image: torch.Tensor, vocab: dict, decode_ids_fn, idx2token: dict, device, max_len: int = 24) -> str:
     model.eval()
     image = image.unsqueeze(0).to(device)
-    image_feats = model.encoder(image)
-
-    # Nếu dùng network2, cnn_feats phải đi qua attention và transformer trước
-    if hasattr(model, 'transformer') and hasattr(model, 'attention'):
-        attn_feats = model.attention(image_feats)
-        image_feats = model.transformer(attn_feats)
-
+    
+    # Do chúng ta chỉ sử dụng Network1 theo cấu trúc có sẵn: .encoder và .decoder
+    cnn_feats = model.encoder(image)
     tokens = [vocab["<BOS>"]]
     for _ in range(max_len - 1):
         caption_in = torch.tensor(tokens, dtype=torch.long, device=device).unsqueeze(0)
+        outputs = model.decoder(cnn_feats, caption_in)
         
-        if hasattr(model, 'transformer'):
-             # Network 2: decode chỉ trả về logits
-             logits = model.decoder(image_feats, caption_in)
+        if isinstance(outputs, tuple):
+            logits = outputs[0]
         else:
-             # Network 1: decode trả về logits, attn_weights
-             logits, _ = model.decoder(image_feats, caption_in)
-             
+            logits = outputs
+            
         next_token = int(torch.argmax(logits[0, -1]).item())
         tokens.append(next_token)
         if next_token == vocab["<EOS>"]:
@@ -145,3 +140,55 @@ def predict_folder(model, folder_path, vocab, decode_ids_fn, idx2token, device, 
             plt.show()
         except Exception as e:
             print(f"Error predicting {file}: {e}")
+
+def calculate_bleu_score(model, val_loader, vocab, idx2token, decode_ids_fn, device, max_len=24, num_batches=None):
+    from nltk.translate.bleu_score import corpus_bleu
+    import warnings
+    warnings.filterwarnings('ignore') # ignore warning when pred is too short
+    
+    model.eval()
+    references = []
+    hypotheses = []
+    
+    pbar = tqdm(val_loader, desc="Calculating BLEU", leave=False)
+    
+    for i, (images, caption_in, caption_out, _) in enumerate(pbar):
+        if num_batches is not None and i >= num_batches:
+            break
+            
+        # Dùng batch size
+        bz = images.size(0)
+        
+        # Batch evaluation
+        for j in range(bz):
+            # Target (Reference)
+            target_ids = caption_out[j].cpu().tolist()
+            target_str = decode_ids_fn(target_ids, idx2token)
+            references.append([target_str.split()])  # corpus_bleu cần list các reference (1 reference/hình)
+            
+            # Predict (Hypothesis)
+            # Lưu ý generate_caption expects cpu image if unsqueeze is inside, it already does .to(device)
+            pred_str = generate_caption(
+                model=model, 
+                image=images[j].cpu(), 
+                vocab=vocab,
+                decode_ids_fn=decode_ids_fn,
+                idx2token=idx2token,
+                device=device,
+                max_len=max_len
+            )
+            hypotheses.append(pred_str.split())
+            
+    # Tính toán BLEU
+    bleu_1 = corpus_bleu(references, hypotheses, weights=(1.0, 0, 0, 0))
+    bleu_2 = corpus_bleu(references, hypotheses, weights=(0.5, 0.5, 0, 0))
+    bleu_3 = corpus_bleu(references, hypotheses, weights=(0.33, 0.33, 0.33, 0))
+    bleu_4 = corpus_bleu(references, hypotheses, weights=(0.25, 0.25, 0.25, 0.25))
+    
+    print("--- ĐÁNH GIÁ MÔ HÌNH (BLEU SCORE) ---")
+    print(f"BLEU-1: {bleu_1*100:.2f}")
+    print(f"BLEU-2: {bleu_2*100:.2f}")
+    print(f"BLEU-3: {bleu_3*100:.2f}")
+    print(f"BLEU-4: {bleu_4*100:.2f}")
+    
+    return bleu_1, bleu_2, bleu_3, bleu_4
