@@ -19,7 +19,12 @@ def train_one_epoch(model, loader, optimizer, criterion, device):
 
         optimizer.zero_grad()
         
-        logits, _ = model(images, caption_in)
+        outputs = model(images, caption_in)
+        if isinstance(outputs, tuple):
+            logits = outputs[0]
+        else:
+            logits = outputs
+            
         loss = criterion(logits.reshape(-1, logits.size(-1)), caption_out.reshape(-1))
         loss.backward()
         
@@ -43,7 +48,12 @@ def evaluate_one_epoch(model, loader, criterion, device):
         caption_in = caption_in.to(device)
         caption_out = caption_out.to(device)
 
-        logits, _ = model(images, caption_in)
+        outputs = model(images, caption_in)
+        if isinstance(outputs, tuple):
+            logits = outputs[0]
+        else:
+            logits = outputs
+            
         loss = criterion(logits.reshape(-1, logits.size(-1)), caption_out.reshape(-1))
         
         running_loss += loss.item()
@@ -73,10 +83,22 @@ def generate_caption(model, image: torch.Tensor, vocab: dict, decode_ids_fn, idx
     image = image.unsqueeze(0).to(device)
     image_feats = model.encoder(image)
 
+    # Nếu dùng network2, cnn_feats phải đi qua attention và transformer trước
+    if hasattr(model, 'transformer') and hasattr(model, 'attention'):
+        attn_feats = model.attention(image_feats)
+        image_feats = model.transformer(attn_feats)
+
     tokens = [vocab["<BOS>"]]
     for _ in range(max_len - 1):
         caption_in = torch.tensor(tokens, dtype=torch.long, device=device).unsqueeze(0)
-        logits, _ = model.decoder(image_feats, caption_in)
+        
+        if hasattr(model, 'transformer'):
+             # Network 2: decode chỉ trả về logits
+             logits = model.decoder(image_feats, caption_in)
+        else:
+             # Network 1: decode trả về logits, attn_weights
+             logits, _ = model.decoder(image_feats, caption_in)
+             
         next_token = int(torch.argmax(logits[0, -1]).item())
         tokens.append(next_token)
         if next_token == vocab["<EOS>"]:
@@ -123,4 +145,3 @@ def predict_folder(model, folder_path, vocab, decode_ids_fn, idx2token, device, 
             plt.show()
         except Exception as e:
             print(f"Error predicting {file}: {e}")
-
