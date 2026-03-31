@@ -85,7 +85,7 @@ def analyze_vocabulary(data_dict, top_n=20, show_plot=True):
         most_common = counter.most_common(top_n)
         words, counts = zip(*most_common)
 
-        plt.figure(figsize=(12, 6))
+        plt.figure(figsize=(int(top_n/2.08), int(top_n/4.16)))
         plt.bar(words, counts, color='lightgreen', edgecolor='black')
         plt.title(f"Top {top_n} từ xuất hiện nhiều nhất")
         plt.xticks(rotation=45)
@@ -170,7 +170,7 @@ def visualize_random_samples(data_dict, images_root_path, num_samples=6):
     """Hiển thị lưới các ảnh ngẫu nhiên kèm caption đầu tiên"""
     paths = random.sample(list(data_dict.keys()), num_samples)
 
-    rows = (num_samples + 1) // 2
+    rows = num_samples
     plt.figure(figsize=(15, 5 * rows))
 
     for i, path in enumerate(paths):
@@ -181,7 +181,7 @@ def visualize_random_samples(data_dict, images_root_path, num_samples=6):
             img = Image.open(full_path).convert("RGB")
             plt.subplot(rows, 2, i + 1)
             plt.imshow(img)
-            plt.title(f"Captions:\n- {captions[0]}\n- {captions[1]}", loc='left', fontsize=10)
+            plt.title(f"Captions:\n- {captions[0]}\n- {captions[1]}\n- {captions[2]}\n- {captions[3]}", loc='left', fontsize=10)
             plt.axis('off')
         except Exception as e:
             print(f"Lỗi đọc ảnh {path}: {e}")

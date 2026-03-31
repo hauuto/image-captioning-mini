@@ -9,8 +9,8 @@ class Flickr8k:
     def __init__(self, path):
         self.path = path
         self.captions_path = os.path.join(path, "captions.txt")
+        self.images_path = os.path.join(path, "Images")
         self.download_data()
-
 
     def download_data(self):
         if os.path.exists(self.path):
@@ -37,3 +37,4 @@ class Flickr8k:
                 data_dict[img_name] = []
             data_dict[img_name].append(caption)
         return data_dict
+
