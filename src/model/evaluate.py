@@ -6,8 +6,6 @@ from nltk.translate.bleu_score import corpus_bleu
 from PIL import Image
 from torchvision import transforms
 
-# Import config để lấy các thông số ảnh
-from src.config import Config
 
 class Evaluator:
     def __init__(self, model, vocab, device):
@@ -124,7 +122,7 @@ class Evaluator:
         Dự đoán cho 1 file ảnh bất kỳ (.jpg, .png)
         """
         transform = transforms.Compose([
-            transforms.Resize((Config.IMAGE_SIZE, Config.IMAGE_SIZE)),
+            transforms.Resize((224, 224)),
             transforms.ToTensor(),
             transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
         ])

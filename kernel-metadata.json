@@ -1,0 +1,15 @@
+{
+  "id": "hauuto/image-captioning-mini",
+  "title": "BaseLine Image Captioning",
+  "code_file": "D:\\Github\\image-captioning-mini\\notebooks\\2. Baseline.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
