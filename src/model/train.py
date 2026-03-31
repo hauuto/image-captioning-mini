@@ -8,9 +8,10 @@ import torch.optim as optim
 from tqdm import tqdm
 import numpy as np
 
+from src.model.baseline.Config import Config
+
 # Import các module đã viết
-from src.config import Config
-from src.model import CNNtoRNN
+from src.model.baseline import CNNtoRNN
 
 def save_checkpoint(state, filename="best_model.pth"):
     """Lưu checkpoint model"""
