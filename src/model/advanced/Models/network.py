@@ -3,11 +3,17 @@ import torch.nn as nn
 import torchvision.models as models
 
 class CNNEncoder(nn.Module):
-    def __init__(self, out_dim: int = 512):
+    def __init__(self, out_dim: int = 512, backbone_type: str = 'resnet18'):
         super().__init__()
-        backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        if backbone_type == 'resnet18':
+            backbone = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
+        else:
+            backbone = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+            
         self.feature_extractor = nn.Sequential(*list(backbone.children())[:-2])
-        self.proj = nn.Conv2d(512, out_dim, kernel_size=1)
+        # ResNet18 outputs 512 channels, ResNet50 outputs 2048 channels
+        in_features = 512 if backbone_type == 'resnet18' else 2048
+        self.proj = nn.Conv2d(in_features, out_dim, kernel_size=1)
 
     def forward(self, images: torch.Tensor) -> torch.Tensor:
         feats = self.feature_extractor(images)
@@ -55,10 +61,11 @@ class CaptionDecoderGRU(nn.Module):
         logits = self.output(torch.cat([hidden_seq, context], dim=-1))
         return logits, attn_weights
 
-class ImageCaptioningModel(nn.Module):
+class Network1(nn.Module):
+    """Network 1: ResNet18 + GRU + Additive Attention"""
     def __init__(self, vocab_size: int, pad_idx: int, embed_dim: int = 256, hidden_dim: int = 256, feature_dim: int = 512, attn_dim: int = 256):
         super().__init__()
-        self.encoder = CNNEncoder(out_dim=feature_dim)
+        self.encoder = CNNEncoder(out_dim=feature_dim, backbone_type='resnet18')
         self.decoder = CaptionDecoderGRU(
             vocab_size=vocab_size,
             embed_dim=embed_dim,
@@ -72,3 +79,6 @@ class ImageCaptioningModel(nn.Module):
         image_feats = self.encoder(images)
         logits, attn_weights = self.decoder(image_feats, caption_in)
         return logits, attn_weights
+
+# Giữ lại class alias tương thích ngược nếu lỡ gọi
+ImageCaptioningModel = Network1
